@@ -76,7 +76,7 @@ module.exports = (robot) ->
 
   robot.respond /(pager|major)( me)? incident (.*)$/i, (msg) ->
     msg.finish()
-    
+
     if pagerduty.missingEnvironmentForApi(msg)
       return
 
@@ -756,7 +756,7 @@ module.exports = (robot) ->
 
   withCurrentOncall = (msg, schedule, cb) ->
     withCurrentOncallUser 1, msg, schedule, (user, s) ->
-      cb(user.name, s)
+      cb(user?.name or 'Nobody', s)
 
   withCurrentOncallId = (msg, schedule, cb) ->
     withCurrentOncallUser 1, msg, schedule, (user, s) ->
@@ -808,6 +808,8 @@ module.exports = (robot) ->
             ]
           return cb(users, schedule)
         cb(json.entries[0].user, schedule)
+      else
+        cb(null, schedule)
 
 
   withTimeBasedOncall = (addedHours = 1, msg, cb) ->
