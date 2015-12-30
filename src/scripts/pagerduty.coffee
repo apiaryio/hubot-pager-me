@@ -802,10 +802,7 @@ module.exports = (robot) ->
 
   withCurrentOncall = (msg, schedule, cb) ->
     withCurrentOncallUser 1, msg, schedule, (user, s) ->
-      if (user)
-        cb(user.name, s)
-      else
-        cb(null, s)
+      cb(user?.name or 'Nobody', s)
 
   withCurrentOncallId = (msg, schedule, cb) ->
     withCurrentOncallUser 1, msg, schedule, (user, s) ->
@@ -858,6 +855,8 @@ module.exports = (robot) ->
             ]
           return cb(users, schedule)
         cb(json.entries[0].user, schedule)
+      else
+        cb(null, schedule)
 
 
   withTimeBasedOncall = (addedHours = 1, msg, cb) ->
