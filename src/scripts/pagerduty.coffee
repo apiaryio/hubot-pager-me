@@ -633,7 +633,7 @@ module.exports = (robot) ->
         cb null
 
     if oncallName?
-      withScheduleMatching msg, oncallName, (s) ->
+      withOncallMatching msg, oncallName, (s) ->
         renderOncall s, (err) ->
           if err?
             robot.emit 'error'
@@ -761,12 +761,32 @@ module.exports = (robot) ->
 
       cb(schedules)
 
+
+  OncallsMatching = (msg, q, cb) ->
+    query = {
+      query: q
+    }
+    pagerduty.getOncalls query, (err, oncalls) ->
+      if err?
+        robot.emit 'error', err, msg
+        return
+
+      cb(oncalls)
+
   withScheduleMatching = (msg, q, cb) ->
     SchedulesMatching msg, q, (schedules) ->
       if schedules?.length < 1
         msg.send "I couldn't find any schedules matching #{q}"
       else
         cb(schedule) for schedule in schedules
+      return
+
+  withOncallMatching = (msg, q, cb) ->
+    OncallsMatching msg, q, (oncalls) ->
+      if oncalls?.length < 1
+        msg.send "I couldn't find any oncalls matching #{q}"
+      else
+        cb(oncall) for oncall in oncalls
       return
 
   reassignmentParametersForUserOrScheduleOrEscalationPolicy = (msg, string, cb) ->
