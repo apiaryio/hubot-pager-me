@@ -619,39 +619,39 @@ module.exports = (robot) ->
 
     messages = []
 
-    scheduleName = msg.match[3] or msg.match[4]
+    oncallName = msg.match[3] or msg.match[4]
 
-    if scheduleName?.trim() is 'next'
+    if oncallName?.trim() is 'next'
       return
 
-    renderSchedule = (s, cb) ->
-      withCurrentOncall msg, s, (username, schedule) ->
+    renderOncall = (s, cb) ->
+      withCurrentOncall msg, s, (username, oncall) ->
         if (username)
-          messages.push("> #{schedule.name} - *#{username}*")
+          messages.push("> #{oncall.name} - *#{username}*")
         else
-          robot.logger.debug "No user for schedule #{schedule.name}"
+          robot.logger.debug "No user for oncall #{oncall.name}"
         cb null
 
-    if scheduleName?
-      withScheduleMatching msg, scheduleName, (s) ->
-        renderSchedule s, (err) ->
+    if oncallName?
+      withScheduleMatching msg, oncallName, (s) ->
+        renderOncall s, (err) ->
           if err?
             robot.emit 'error'
             return
           msg.send messages.join("\n")
     else
-      pagerduty.getSchedules (err, schedules) ->
+      pagerduty.getOncalls (err, oncalls) ->
         if err?
           robot.emit 'error', err, msg
           return
-        if schedules.length > 0
-          async.map schedules, renderSchedule, (err) ->
+        if oncalls.length > 0
+          async.map oncalls, renderOncall, (err) ->
             if err?
               robot.emit 'error', err, msg
               return
             msg.send messages.join("\n")
         else
-          msg.send 'No schedules found!'
+          msg.send 'No oncall found!'
 
   robot.respond /(pager|major)( me)? services$/i, (msg) ->
     if pagerduty.missingEnvironmentForApi(msg)
