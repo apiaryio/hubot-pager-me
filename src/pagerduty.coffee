@@ -1,7 +1,6 @@
 HttpClient = require 'scoped-http-client'
 _ = require('lodash')
 moment = require('moment-timezone')
-timezone = 'UTC'
 
 pagerDutyApiKey        = process.env.HUBOT_PAGERDUTY_API_KEY
 pagerDutySubdomain     = process.env.HUBOT_PAGERDUTY_SUBDOMAIN
@@ -137,7 +136,7 @@ module.exports =
         return
       cb(null, json.incidents)
 
-  getOncalls: (query, cb) ->
+  getOncalls: (query, tz, cb) ->
     if typeof(query) is 'function'
       cb = query
       query = {}
@@ -158,9 +157,11 @@ module.exports =
       oncalls = _.map json.oncalls, (o) ->
         if o.escalation_level is 1 then return o
       filterdOncalls = _.without(oncalls, undefined)
-
+      timezone = tz
       oncallsBySchedules = _.transform(filterdOncalls, (result, value, key) ->
-        message = "(#{moment(value.start).tz(timezone).format('MMM Do, h:mm a')} - #{moment(value.end).tz(timezone).format('MMM Do, h:mm a')}) - *#{value.user.summary}*"
+        message = "(#{moment(value.start).tz(timezone).format('MMM Do, h:mm a')} "
+        message += "- #{moment(value.end).tz(timezone).format('MMM Do, h:mm a')}) "
+        message += "- *#{value.user.summary}*"
         unless result[value.schedule.summary]
           (result[value.schedule.summary] || (result[value.schedule.summary] = [])).push(message);
         if result[value.schedule.summary].indexOf(message) == -1
