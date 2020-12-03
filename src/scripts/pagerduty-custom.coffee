@@ -1,4 +1,7 @@
 pagerduty = require('../pagerduty')
+userSupportId = process.env.HUBOT_PAGERDUTY_SCHEDULE_USERSUP_ID
+platformId = process.env.HUBOT_PAGERDUTY_SCHEDULE_PLATFORM_ID
+escalationId = process.env.HUBOT_PAGERDUTY_SCHEDULE_ESCALATION_ID
 
 # selects the right oncall based on current time
 findOncall = (oncalls, timeFrame, timeNow) ->
@@ -44,7 +47,7 @@ getCustomOncalls = (timeFrame, msg) ->
   query = {
     limit: 50
     time_zone: 'UTC'
-    "schedule_ids[]": ['PDHLWLB' , 'PGWSC3H', 'PGFERYM'],
+    "schedule_ids[]": [userSupportId, platformId, escalationId],
     since: timeQuery.since
     until: timeQuery.untilParam
   }
@@ -53,9 +56,9 @@ getCustomOncalls = (timeFrame, msg) ->
     if err
       msg.send(err)
 
-    userSupports = json.oncalls.filter((oncall) -> oncall.schedule.id is 'PDHLWLB')
-    escallations = json.oncalls.filter((oncall) -> oncall.schedule.id is 'PGFERYM')
-    platformOncalls = json.oncalls.filter((oncall) -> oncall.schedule.id is 'PGWSC3H')
+    userSupports = json.oncalls.filter((oncall) -> oncall.schedule.id is userSupportId)
+    escallations = json.oncalls.filter((oncall) -> oncall.schedule.id is escalationId)
+    platformOncalls = json.oncalls.filter((oncall) -> oncall.schedule.id is platformId)
 
     userSupport = findOncall(userSupports, timeFrame, timeNow)
     escallation = findOncall(escallations, timeFrame, timeNow)
