@@ -70,5 +70,8 @@ getCustomOncalls = (timeFrame, msg) ->
 
     msg.send(message)
   )
+getCustomOncalls.findOncall = findOncall
+getCustomOncalls.formatTime = formatTime
+getCustomOncalls.setTimeQuery = setTimeQuery
+
 module.exports = getCustomOncalls
-module.exports = { findOncall, formatTime, setTimeQuery }
