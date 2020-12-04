@@ -1,9 +1,14 @@
 HttpClient = require 'scoped-http-client'
+_ = require('lodash')
+moment = require('moment-timezone')
+timezone = 'UTC'
 
 pagerDutyApiKey        = process.env.HUBOT_PAGERDUTY_API_KEY
 pagerDutySubdomain     = process.env.HUBOT_PAGERDUTY_SUBDOMAIN
 pagerDutyBaseUrl       = 'https://api.pagerduty.com'
 pagerDutyServices      = process.env.HUBOT_PAGERDUTY_SERVICES
+pagerDutyTeams         = process.env.HUBOT_PAGERDUTY_TEAMS
+pagerDutySchedules     = process.env.HUBOT_PAGERDUTY_SCHEDULES
 pagerDutyFromEmail     = process.env.HUBOT_PAGERDUTY_FROM_EMAIL
 pagerNoop              = process.env.HUBOT_PAGERDUTY_NOOP
 pagerNoop              = false if pagerNoop is 'false' or pagerNoop is 'off'
@@ -33,8 +38,11 @@ module.exports =
       cb = query
       query = {}
 
+    if pagerDutyTeams? && url.match /\/incidents/
+      query['teams_ids[]'] = pagerDutyTeams.split(',')
+
     if pagerDutyServices? && url.match /\/incidents/
-      query['service_id'] = pagerDutyServices
+      query['service_ids[]'] = pagerDutyServices.split(',')
 
     @http(url)
       .query(query)
@@ -133,6 +141,38 @@ module.exports =
         cb(err)
         return
       cb(null, json.incidents)
+
+  getOncalls: (query, cb) ->
+    if typeof(query) is 'function'
+      cb = query
+      query = {}
+
+    if pagerDutySchedules?
+      query['schedule_ids[]'] = pagerDutySchedules.split(',')
+
+    if pagerDutyEscalationsPolicies?
+      query['escalation_policy_ids[]'] = pagerDutyEscalationsPolicies.split(',')
+
+    console.error query
+
+    @get "/oncalls", query, (err, json) ->
+      if err?
+        cb(err)
+        return
+      # escalation_level filtering
+      oncalls = _.map json.oncalls, (o) ->
+        if o.escalation_level is 1 then return o
+      filterdOncalls = _.without(oncalls, undefined)
+
+      oncallsBySchedules = _.transform(filterdOncalls, (result, value, key) ->
+        message = "(#{moment(value.start).tz(timezone).format('MMM Do, h:mm a')} - #{moment(value.end).tz(timezone).format('MMM Do, h:mm a')}) - *#{value.user.summary}*"
+        unless result[value.schedule.summary]
+          (result[value.schedule.summary] || (result[value.schedule.summary] = [])).push(message);
+        if result[value.schedule.summary].indexOf(message) == -1
+          (result[value.schedule.summary] || (result[value.schedule.summary] = [])).push(message);
+      , {})
+
+      cb(null, oncallsBySchedules)
 
   getSchedules: (query, cb) ->
     if typeof(query) is 'function'
