@@ -28,7 +28,7 @@ setTimeQuery = (timeFrame, timeNow)  ->
   past = new Date(timeNow - (72 * 3600000)).toISOString()
   future = new Date(timeNow + (72 * 3600000)).toISOString()
   plusMinute = new Date(timeNow + 60000).toISOString()
-  
+
   if timeFrame is 'was'
     return { since: past, untilParam: new Date(timeNow).toISOString() }
 
@@ -63,8 +63,8 @@ getCustomOncalls = (timeFrame, msg) ->
     userSupport = findOncall(userSupports, timeFrame, timeNow)
     escallation = findOncall(escallations, timeFrame, timeNow)
     platformOncall = findOncall(platformOncalls, timeFrame, timeNow)
-    
-    message = "#{userSupport.schedule.summary} - (#{formatTime(userSupport.start)} - #{formatTime(userSupport.end)}) - *#{userSupport.user.summary}*\n"
+
+    message = "#{userSupport.schedule.summary} - #{formatTime(userSupport.start)} - #{formatTime(userSupport.end)} - *#{userSupport.user.summary}*\n"
     message += "#{platformOncall.schedule.summary} - #{formatTime(platformOncall.start)} - #{formatTime(platformOncall.end)} - *#{platformOncall.user.summary}*\n"
     message += "#{escallation.schedule.summary} - #{formatTime(escallation.start)} - #{formatTime(escallation.end)} - *#{escallation.user.summary}*\n"
 
