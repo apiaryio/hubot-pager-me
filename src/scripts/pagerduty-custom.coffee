@@ -1,5 +1,5 @@
 pagerduty = require('../pagerduty')
-pick = require('lodash/pick')
+{ first, last, pick } = require('lodash')
 
 userSupportId = process.env.HUBOT_PAGERDUTY_SCHEDULE_USERSUP_ID
 platformId = process.env.HUBOT_PAGERDUTY_SCHEDULE_PLATFORM_ID
@@ -17,14 +17,14 @@ filterIncidentCmd = (oncall) -> oncall.schedule.id is escalationId
 findOncall = (oncalls, timeFrame, now) ->
   nowIso = new Date(now).toISOString()
   if timeFrame in ['was', 'before']
-    return oncalls.filter((oncall) ->
+    return last(oncalls.filter((oncall) ->
       oncall.end < nowIso
-    ).slice(-1)[0] # last end before now
+    )) # last oncall.end before now
 
   if timeFrame in ['next', 'after']
-    return oncalls.filter((oncall) ->
+    return first(oncalls.filter((oncall) ->
       oncall.start > nowIso
-    ).slice(0, 1)[0] # first start after now
+    )) # first oncall.start after now
 
   return oncalls.find((oncall) ->
     oncall.start < nowIso < oncall.end
@@ -41,14 +41,14 @@ findIncidentCmd = (oncalls, timeFrame, now) ->
   nowPlus24h = new Date(now + oneDayMs).toISOString()
 
   if timeFrame is 'was'
-    found = oncalls.find((oncall) ->
+    found = last(oncalls.filter((oncall) ->
       oncall.end > nowMinus24h
-    )
+    ))
 
   if timeFrame is 'next'
-    found = oncalls.find((oncall) ->
+    found = first(oncalls.find((oncall) ->
       oncall.start < nowPlus24h
-    )
+    ))
 
   return found || findOncall(oncalls, 'now', now)
 
