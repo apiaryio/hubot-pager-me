@@ -610,6 +610,14 @@ module.exports = (robot) ->
   robot.respond /who(?:’s|'s|s| is|se)? ((next (on call|oncall|on-call))|((on call|oncall|on-call) next))/i, (msg) ->
     getCustomOncalls 'next', msg
 
+  # who is on call after current shift?
+  robot.respond /who(?:’s|'s|s| is|se)? ((after (on call|oncall|on-call))|((on call|oncall|on-call) after))/i, (msg) ->
+    getCustomOncalls 'after', msg
+
+  # who is on call after current shift?
+  robot.respond /who(?:’s|'s|s| is|se)? ((before (on call|oncall|on-call))|((on call|oncall|on-call) before))/i, (msg) ->
+    getCustomOncalls 'before', msg
+
   # who is on call?
   robot.respond /who(?:’s|'s|s| is|se)? (?:on call|oncall|on-call)(?:\?)?(?: (?:for )?((["'])([^]*?)\2|(.*?))(?:\?|$))?$/i, (msg) ->
     getCustomOncalls 'now', msg

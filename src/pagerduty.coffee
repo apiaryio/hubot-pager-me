@@ -153,8 +153,6 @@ module.exports =
     if pagerDutyEscalationsPolicies?
       query['escalation_policy_ids[]'] = pagerDutyEscalationsPolicies.split(',')
 
-    console.error query
-
     @get "/oncalls", query, (err, json) ->
       if err?
         cb(err)

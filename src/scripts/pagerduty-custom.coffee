@@ -1,41 +1,97 @@
 pagerduty = require('../pagerduty')
+pick = require('lodash/pick')
+
 userSupportId = process.env.HUBOT_PAGERDUTY_SCHEDULE_USERSUP_ID
 platformId = process.env.HUBOT_PAGERDUTY_SCHEDULE_PLATFORM_ID
 escalationId = process.env.HUBOT_PAGERDUTY_SCHEDULE_ESCALATION_ID
 
+oneDayMs = 24 * 3600 * 1000
+weekMs = 7 * oneDayMs
+
+filterUserSupport = (oncall) -> oncall.schedule.id is userSupportId
+filterPlatform    = (oncall) -> oncall.schedule.id is platformId
+filterIncidentCmd = (oncall) -> oncall.schedule.id is escalationId
+
+
 # selects the right oncall based on current time
-findOncall = (oncalls, timeFrame, timeNow) ->
-  if timeFrame is 'was'
-    return oncalls.find((oncall) ->
-      Date.parse(oncall.start) < timeNow - (24 * 3600000) < Date.parse(oncall.end)
-    )
-  if timeFrame is 'next'
-    return oncalls.find((oncall) ->
-      Date.parse(oncall.start) > timeNow
-    )
+findOncall = (oncalls, timeFrame, now) ->
+  nowIso = new Date(now).toISOString()
+  if timeFrame in ['was', 'before']
+    return oncalls.filter((oncall) ->
+      oncall.end < nowIso
+    ).slice(-1)[0] # last end before now
+
+  if timeFrame in ['next', 'after']
+    return oncalls.filter((oncall) ->
+      oncall.start > nowIso
+    ).slice(0, 1)[0] # first start after now
+
   return oncalls.find((oncall) ->
-      Date.parse(oncall.start) < timeNow < Date.parse(oncall.end)
+    oncall.start < nowIso < oncall.end
+  )
+
+
+findIncidentCmd = (oncalls, timeFrame, now) ->
+  if timeFrame in ['before', 'after', 'now']
+    # follow the sorted list of shifts
+    return findOncall(oncalls, timeFrame, now)
+
+  found = null
+  nowMinus24h = new Date(now - oneDayMs).toISOString()
+  nowPlus24h = new Date(now + oneDayMs).toISOString()
+
+  if timeFrame is 'was'
+    found = oncalls.find((oncall) ->
+      oncall.end > nowMinus24h
     )
+
+  if timeFrame is 'next'
+    found = oncalls.find((oncall) ->
+      oncall.start < nowPlus24h
+    )
+
+  return found || findOncall(oncalls, 'now', now)
+
 
 # formats time to show the name of the day, month, day and time
 formatTime = (date) ->
   dateTime = new Date(date).toString()
   return "#{dateTime.substring(0, 10)} #{dateTime.substring(16, 21)}"
 
+
 # according to requesed time (on call, now, on call next, was on call) prepares time query
 # pagerduty limits the amount of returned data, so more precise time settings
-setTimeQuery = (timeFrame, timeNow)  ->
-  past = new Date(timeNow - (72 * 3600000)).toISOString()
-  future = new Date(timeNow + (72 * 3600000)).toISOString()
-  plusMinute = new Date(timeNow + 60000).toISOString()
-  
-  if timeFrame is 'was'
-    return { since: past, untilParam: new Date(timeNow).toISOString() }
+setTimeQuery = (timeFrame, now)  ->
+  nowIso = new Date(now).toISOString()
+  plusMinute = new Date(now + 60000).toISOString()
 
-  if timeFrame is 'next'
-    return { since: new Date(timeNow).toISOString(), untilParam: future }
+  past = new Date(now - weekMs).toISOString()
+  future = new Date(now + weekMs).toISOString()
 
-  return { since: new Date(timeNow).toISOString(), untilParam: plusMinute }
+  if timeFrame in ['was', 'before']
+    return { since: past, untilParam: nowIso, timeFrame }
+
+  if timeFrame in ['next', 'after']
+    return { since: nowIso, untilParam: future, timeFrame }
+
+  return { since: nowIso, untilParam: plusMinute, timeFrame }
+
+
+sortByStartEndAsc = (a, b) ->
+  if a.start > b.start
+    return 1
+  if a.start < b.start
+    return -1
+  if a.end > b.end
+    return 1
+  if a.end < b.end
+    return -1
+  if a.schedule.id > b.schedule.id
+    return 1
+  if a.schedule.id < b.schedule.id
+    return -1
+  return 0
+
 
 getCustomOncalls = (timeFrame, msg) ->
   if not msg?
@@ -45,32 +101,53 @@ getCustomOncalls = (timeFrame, msg) ->
   timeNow = Date.now()
   timeQuery = setTimeQuery(timeFrame, timeNow)
   query = {
-    limit: 50
-    time_zone: 'UTC'
+    limit: 50,
+    time_zone: 'UTC',
     "schedule_ids[]": [userSupportId, platformId, escalationId],
-    since: timeQuery.since
-    until: timeQuery.untilParam
+    since: timeQuery.since,
+    until: timeQuery.untilParam,
+    earliest: true,
   }
+
+  if timeFrame in ['before', 'after']
+    # a week long of oncalls has much more shifts:
+    # 7 days * 3 escalation-layers * 3 services = 63 oncalls
+    # plus added 3 layers of Incident-Command-Week-long
+    # Sum it up and you end-up at 66 "oncalls".
+    # We want to give it some space for overrides, 100 seems reasonable
+    query.limit = 100
 
   pagerduty.get('/oncalls', query, (err, json) ->
     if err
-      msg.send(err)
+      msg.send('Error:' + err)
+      return
 
-    userSupports = json.oncalls.filter((oncall) -> oncall.schedule.id is userSupportId)
-    escallations = json.oncalls.filter((oncall) -> oncall.schedule.id is escalationId)
-    platformOncalls = json.oncalls.filter((oncall) -> oncall.schedule.id is platformId)
+    escalationLevelOne = json.oncalls.filter((oncall) ->
+      return oncall.escalation_level == 1
+    )
+
+    userSupports = escalationLevelOne.filter(filterUserSupport).sort(sortByStartEndAsc)
+    platformOncalls = escalationLevelOne.filter(filterPlatform).sort(sortByStartEndAsc)
+    incidentCmds = escalationLevelOne.filter(filterIncidentCmd).sort(sortByStartEndAsc)
 
     userSupport = findOncall(userSupports, timeFrame, timeNow)
-    escallation = findOncall(escallations, timeFrame, timeNow)
     platformOncall = findOncall(platformOncalls, timeFrame, timeNow)
-    
-    message = "#{userSupport.schedule.summary} - (#{formatTime(userSupport.start)} - #{formatTime(userSupport.end)}) - *#{userSupport.user.summary}*\n"
+
+    # custom logic for escallations, because they have week-long shifts
+    # and we basically loaded either a week before, or week after today
+    incidentCmd = findIncidentCmd(incidentCmds, timeFrame, timeNow)
+
+    message = "#{userSupport.schedule.summary} - #{formatTime(userSupport.start)} - #{formatTime(userSupport.end)} - *#{userSupport.user.summary}*\n"
     message += "#{platformOncall.schedule.summary} - #{formatTime(platformOncall.start)} - #{formatTime(platformOncall.end)} - *#{platformOncall.user.summary}*\n"
-    message += "#{escallation.schedule.summary} - #{formatTime(escallation.start)} - #{formatTime(escallation.end)} - *#{escallation.user.summary}*\n"
+    message += "#{incidentCmd.schedule.summary} - #{formatTime(incidentCmd.start)} - #{formatTime(incidentCmd.end)} - *#{incidentCmd.user.summary}*\n"
 
     msg.send(message)
+    return
   )
+  return
+
 getCustomOncalls.findOncall = findOncall
+getCustomOncalls.findIncidentCmd = findIncidentCmd
 getCustomOncalls.formatTime = formatTime
 getCustomOncalls.setTimeQuery = setTimeQuery
 
