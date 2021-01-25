@@ -30,8 +30,25 @@ Then add **hubot-pager-me** to your `external-scripts.json`:
 | `HUBOT_PAGERDUTY_SERVICES` | No | Provide a comma separated list of service identifiers (e.g. `PFGPBFY,AFBCGH`) to restrict queries to only those services. |
 | `HUBOT_PAGERDUTY_TEAMS` | No | Provide a comma separated list of teams identifiers (e.g. `PFGPBFY,AFBCGH`) to restrict queries to only those teams. You need teams function on |
 | `HUBOT_PAGERDUTY_SCHEDULES` | No | Provide a comma separated list of schedules identifiers (e.g. `PFGPBFY,AFBCGH`) to restrict queries to only those schedules. |
+| `HUBOT_PAGERDUTY_SCHEDULE_USERSUP_ID` | No`*` | UserSupport Schedule identifier (e.g. `PQZRDUG`) used when looking for User Support shifts |
+| `HUBOT_PAGERDUTY_SCHEDULE_PLATFORM_ID` | No`*` | PlatformOncall-L1 Schedule identifier (e.g. `PQZRDUG`) used when looking for Platform OnCall shifts |
+| `HUBOT_PAGERDUTY_SCHEDULE_ESCALATION_ID` | No`*` | IncidentCommand-L2 Schedule identifier (e.g. `PQZRDUG`) used when looking for Incident Command shifts |
 
 `*` - May be required for certain actions.
+
+## Run locally to query PagerDuty API for OnCall shifts
+
+**Note**: Requires all three `HUBOT_PAGERDUTY_SCHEDULE_<...>_ID` environment variables to be set.
+
+After installing all the `node_modules`, and exporting neccessary environment variables you can run the script and pass it a message as a command (it will print-back the output):
+
+```
+node ./node_modules/.bin/coffee index.coffee "who's oncall"
+
+node ./node_modules/.bin/coffee index.coffee "who's oncall next"
+
+node ./node_modules/.bin/coffee index.coffee "who was oncall"
+```
 
 ### Webhook
 
