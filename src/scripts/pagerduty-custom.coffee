@@ -46,7 +46,7 @@ findIncidentCmd = (oncalls, timeFrame, now) ->
     ))
 
   if timeFrame is 'next'
-    found = first(oncalls.find((oncall) ->
+    found = first(oncalls.filter((oncall) ->
       oncall.start < nowPlus24h
     ))
 
