@@ -16,9 +16,6 @@
   "bugs": {
     "url": "https://github.com/hubot-scripts/hubot-pager-me/issues"
   },
-  "peerDependencies": {
-    "hubot": "^3"
-  },
   "dependencies": {
     "async": "^3.2.0",
     "lodash": "^4.17.20",
