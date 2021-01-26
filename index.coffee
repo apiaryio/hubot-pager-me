@@ -37,6 +37,8 @@ if require.main == module
     )
     if res != null
       console.log('Found a message match!')
+    if filtered.length > 1
+      console.log("Possible issue with RegExp matching: #{filtered.length} matches found!")
     return { filtered, res }
 
   robot.respond = (regex, fn) ->

@@ -603,23 +603,23 @@ module.exports = (robot) ->
 
 
   # who was on call?
-  robot.respond /who was (on call|oncall|on-call)/i, (msg) ->
+  robot.respond /who was (on call|oncall|on-call)[\s\?]*$/i, (msg) ->
     getCustomOncalls 'was', msg
 
   # who is next on call?
-  robot.respond /who(?:’s|'s|s| is|se)? ((next (on call|oncall|on-call))|((on call|oncall|on-call) next))/i, (msg) ->
+  robot.respond /who(?:’s|'s|s| is|se)? ((next (on call|oncall|on-call))|((on call|oncall|on-call) next))[\s\?]*$/i, (msg) ->
     getCustomOncalls 'next', msg
 
   # who is on call after current shift?
-  robot.respond /who(?:’s|'s|s| is|se)? ((after (on call|oncall|on-call))|((on call|oncall|on-call) after))/i, (msg) ->
+  robot.respond /who(?:’s|'s|s| is|se)? ((after (on call|oncall|on-call))|((on call|oncall|on-call) after))[\s\?]*$/i, (msg) ->
     getCustomOncalls 'after', msg
 
   # who was on call before current shift?
-  robot.respond /who(?:’s|'s|s| is| was|se)? ((before (on call|oncall|on-call))|((on call|oncall|on-call) before))/i, (msg) ->
+  robot.respond /who(?:’s|'s|s| is| was|se)? ((before (on call|oncall|on-call))|((on call|oncall|on-call) before))[\s\?]*$/i, (msg) ->
     getCustomOncalls 'before', msg
 
   # who is on call?
-  robot.respond /who(?:’s|'s|s| is|se)? (?:on call|oncall|on-call)(?:\?)?(?: (?:for )?((["'])([^]*?)\2|(.*?))(?:\?|$))?$/i, (msg) ->
+  robot.respond /who(?:’s|'s|s| is|se)? (on call|oncall|on-call)(?: now)?[\?\s]*$/i, (msg) ->
     getCustomOncalls 'now', msg
 
   robot.respond /(pager|major)( me)? services$/i, (msg) ->

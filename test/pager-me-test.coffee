@@ -8,7 +8,7 @@ describe 'pagerduty', ->
   before ->
     @triggerRegex = /(pager|major)( me)? (?:trigger|page) ((["'])([^\4]*?)\4|“([^”]*?)”|‘([^’]*?)’|([\.\w\-]+)) (.+)$/i
     @schedulesRegex = /(pager|major)( me)? schedules( ((["'])([^]*?)\5|(.+)))?$/i
-    @whosOnCallRegex = /who(?:’s|'s|s| is|se)? (?:on call|oncall|on-call)(?:\?)?(?: (?:for )?((["'])([^]*?)\2|(.*?))(?:\?|$))?$/i
+    @whosOnCallRegex = /who(?:’s|'s|s| is|se)? (on call|oncall|on-call)(?: now)?[\?\s]*$/i
 
   beforeEach ->
     @robot =
@@ -119,19 +119,3 @@ describe 'pagerduty', ->
   it 'whos on call handles no schedule', ->
     msg = @whosOnCallRegex.exec('whos on call')
     expect(msg).to.not.be.null
-
-  it 'whos on call handles schedules with quotes', ->
-    msg = @whosOnCallRegex.exec('whos on call for "foo bar"')
-    expect(msg[3]).to.equal('foo bar')
-
-  it 'whos on call handles schedules with quotes and quesiton mark', ->
-    msg = @whosOnCallRegex.exec('whos on call for "foo bar"?')
-    expect(msg[3]).to.equal('foo bar')
-
-  it 'whos on call handles schedules without quotes', ->
-    msg = @whosOnCallRegex.exec('whos on call for foo bar')
-    expect(msg[4]).to.equal('foo bar')
-
-  it 'whos on call handles schedules without quotes and question mark', ->
-    msg = @whosOnCallRegex.exec('whos on call for foo bar?')
-    expect(msg[4]).to.equal('foo bar')
