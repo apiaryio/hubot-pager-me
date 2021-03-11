@@ -100,22 +100,20 @@ getCustomOncalls = (timeFrame, msg) ->
 
   timeNow = Date.now()
   timeQuery = setTimeQuery(timeFrame, timeNow)
+
+  # a week long of oncalls has much more shifts:
+  # 7 days * 3 escalation-layers * 3 services = 63 oncalls
+  # plus added 3 layers of Incident-Command-Week-long
+  # Sum it up and you end-up at 66 "oncalls".
+  # We want to give it some space for overrides, 100 seems reasonable
   query = {
-    limit: 50,
+    limit: 100,
     time_zone: 'UTC',
     "schedule_ids[]": [userSupportId, platformId, escalationId],
     since: timeQuery.since,
     until: timeQuery.untilParam,
     earliest: true,
   }
-
-  if timeFrame in ['before', 'after']
-    # a week long of oncalls has much more shifts:
-    # 7 days * 3 escalation-layers * 3 services = 63 oncalls
-    # plus added 3 layers of Incident-Command-Week-long
-    # Sum it up and you end-up at 66 "oncalls".
-    # We want to give it some space for overrides, 100 seems reasonable
-    query.limit = 100
 
   pagerduty.get('/oncalls', query, (err, json) ->
     if err
